@@ -1,0 +1,14 @@
+mat-list-item{
+  height: 2.5rem;
+}
+
+.mat-button.item{
+  padding-left: 0;
+  line-height: 24px;
+  text-align: left;
+}
+
+.delete-form{
+  background-color: white;
+  padding-bottom: 8px;
+}

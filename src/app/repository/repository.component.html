@@ -1,0 +1,65 @@
+<file-drop class="mat-typography"
+  customstyle="file-drop-custom"
+  (onFileDrop)="dropped($event)">
+  <h1>Drag files to upload</h1>
+</file-drop>
+<mat-list class="mat-typography">
+  <mat-list-item *ngIf="notRoot()">
+    <button mat-button (click)="goBack()" color="accent" class="back-btn">
+      <mat-icon mat-list-icon>arrow_back</mat-icon>
+      Back
+    </button>
+  </mat-list-item>
+  <mat-list-item>
+    <button mat-button (click)="newFolder = true" *ngIf="!newFolder" color="primary" class="new-folder">
+      <mat-icon mat-list-icon>add</mat-icon>
+      New Folder
+    </button>
+    <form [formGroup]="formGroup" (ngSubmit)="addFolder()" *ngIf="newFolder" #newFolderForm="ngForm">
+      <mat-form-field>
+        <input matInput placeholder="New Folder Name" [(ngModel)]="folderName" formControlName="folderName">
+        <mat-error *ngIf="!formGroup.valid">
+          Folder name is invalid!
+        </mat-error>
+      </mat-form-field>
+      <button mat-button color="warn" type="button" (click)="newFolder = false">Cancel</button>
+    </form>
+  </mat-list-item>
+  <mat-list-item *ngFor="let file of files" [ngSwitch]="file.type">
+    <button mat-icon-button *ngIf="!file.confirmDelete" (click)="confirmDelete(file)">
+      <mat-icon mat-list-icon color="warn">delete_forever</mat-icon>
+    </button>
+    <div *ngIf="file.confirmDelete" class="delete-form">
+      <h4>
+        You are about to delete {{file.type}} 
+        <strong>{{file.name}}</strong>. 
+        This action cannot be undone!
+      </h4>
+      <form [formGroup]="formGroupDelete" (ngSubmit)="delete(file)" #deleteConfirmForm="ngForm">
+        <mat-form-field>
+          <input matInput placeholder="Type 'delete' to confirm" [(ngModel)]="deleteConfirm" (ngModelChange)="watchdog.detectChanges()" formControlName="deleteConfirm">
+          <mat-error *ngIf="!formGroupDelete.valid">
+            Check spelling and try again
+          </mat-error>
+        </mat-form-field>
+        <button mat-button color="primary" type="button" (click)="cancelDelete(file)">Keep {{file.type}}</button>
+      </form>
+    </div>
+    <div *ngSwitchCase="'file'" [class]="file.type" [style.opacity]="file.progress / 100">
+      <a mat-button target="_blank" class="item" *ngIf="!file.confirmDelete" href="{{repo + file.path}}">
+        <mat-icon mat-list-icon
+          [svgIcon]="file.icon"
+          [style.color]="file.iconColor"
+          class="file-type">
+        </mat-icon>
+        {{file.name}}
+      </a>
+    </div>
+    <div color="primary" *ngSwitchCase="'folder'" [class]="file.type">
+      <a mat-button [routerLink]="file.path" class="item" *ngIf="!file.confirmDelete">
+        <mat-icon mat-list-icon class="item-type" color="primary">folder</mat-icon>
+        {{file.name}}
+      </a>
+    </div>
+  </mat-list-item>
+</mat-list>

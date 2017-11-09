@@ -1,0 +1,17 @@
+<form (ngSubmit)="login()" #loginForm="ngForm">
+  <mat-form-field class="full-width">
+    <input matInput placeholder="Username" name="username" [(ngModel)]="username">
+  </mat-form-field>
+  <mat-form-field class="full-width">
+    <input matInput placeholder="Password" type="password" name="password" [(ngModel)]="password">
+  </mat-form-field>
+  <button mat-button color="primary" type="submit">
+    <span *ngIf="!waiting">Login</span>
+    <mat-progress-bar *ngIf="waiting" mode="indeterminate"></mat-progress-bar>
+  </button>
+</form>
+<mat-chip-list *ngIf="error.length > 0" class="mat-typography">
+  <mat-chip color="warn">
+    {{error}}
+  </mat-chip>
+</mat-chip-list>

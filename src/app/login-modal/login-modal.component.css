@@ -1,0 +1,13 @@
+.full-width{
+  width: 100%;
+}
+
+button{
+  float: right;
+  min-height: 36px;
+}
+
+.mat-warn{
+  background-color: #f44336;
+  color: #eee;
+}
