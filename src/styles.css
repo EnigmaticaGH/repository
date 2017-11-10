@@ -21,9 +21,12 @@ a.mat-menu-item > mat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1;
+  user-select: none;
 }
 
 .file-drop-custom h1{
   color: rgba(0, 0, 0, 0.1);
   font-size: 72px;
+  cursor: default;
 }
