@@ -11,8 +11,8 @@ export class RepositoryService {
   private svc = ServiceLocation;
   private url = this.svc[this.svc.env] + 'repository.php';  // URL to web api
   private headers = new Headers({'Content-Type': 'application/json'});
-  private progress: Array<BehaviorSubject<number>>;
-  progressChange: Array<Observable<number>>;
+  private progress: Object;
+  progressChange: Object;
   
   constructor(private http: Http) {
     this.progress = [];
@@ -27,25 +27,37 @@ export class RepositoryService {
   add(folder: string, path: string): Observable<boolean> {
     return this.http
     .put(this.url, JSON.stringify({
+      'type': 'add',
       'folder': folder,
       'path': path
     }), {headers: this.headers})
     .map(res => res.json());
   }
 
-  upload(file: File, path: string): Observable<any> {
-    this.progress[file.name] = new BehaviorSubject<number>(0);
-    this.progressChange[file.name] = this.progress[file.name].asObservable();
+  move(oldPath: string, newPath: string): Observable<boolean> {
+    return this.http
+    .put(this.url, JSON.stringify({
+      'type': 'move',
+      'oldPath': oldPath,
+      'newPath': newPath
+    }), {headers: this.headers})
+    .map(res => res.json());
+  }
+
+  upload(file: File, path: string, relativePath: string): Observable<any> {
+    this.progress[relativePath + file.name] = new BehaviorSubject<number>(0);
+    this.progressChange[relativePath + file.name] = this.progress[relativePath + file.name].asObservable();
     return Observable.create(observer => {
       let formData: FormData = new FormData()
       let xhr: XMLHttpRequest = new XMLHttpRequest();
       formData.append('file', file, file.name);
       formData.append('path', path);
+      formData.append('relativePath', relativePath);
       xhr.onreadystatechange = () => {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             observer.next(JSON.parse(xhr.response));
-            this.progress[file.name].complete();
+            this.progress[relativePath + file.name].complete();
             observer.complete();
           } else {
             observer.error(xhr.response);
@@ -53,7 +65,7 @@ export class RepositoryService {
         }
       };
       xhr.upload.onprogress = (event) => {
-        this.progress[file.name].next(Math.round(event.loaded / event.total * 100));
+        this.progress[relativePath + file.name].next(Math.round(event.loaded / event.total * 100));
       };
 
       xhr.open('POST', this.url, true);

@@ -1,65 +1,176 @@
-<file-drop class="mat-typography"
+<div>
+  <file-drop class="mat-typography"
   customstyle="file-drop-custom"
   (onFileDrop)="dropped($event)">
-  <h1>Drag files to upload</h1>
-</file-drop>
-<mat-list class="mat-typography">
-  <mat-list-item *ngIf="notRoot()">
-    <button mat-button (click)="goBack()" color="accent" class="back-btn">
-      <mat-icon mat-list-icon>arrow_back</mat-icon>
-      Back
-    </button>
-  </mat-list-item>
-  <mat-list-item>
-    <button mat-button (click)="newFolder = true" *ngIf="!newFolder" color="primary" class="new-folder">
-      <mat-icon mat-list-icon>add</mat-icon>
-      New Folder
-    </button>
-    <form [formGroup]="formGroup" (ngSubmit)="addFolder()" *ngIf="newFolder" #newFolderForm="ngForm">
-      <mat-form-field>
-        <input matInput placeholder="New Folder Name" [(ngModel)]="folderName" formControlName="folderName">
-        <mat-error *ngIf="!formGroup.valid">
-          Folder name is invalid!
-        </mat-error>
-      </mat-form-field>
-      <button mat-button color="warn" type="button" (click)="newFolder = false">Cancel</button>
-    </form>
-  </mat-list-item>
-  <mat-list-item *ngFor="let file of files" [ngSwitch]="file.type">
-    <button mat-icon-button *ngIf="!file.confirmDelete" (click)="confirmDelete(file)">
-      <mat-icon mat-list-icon color="warn">delete_forever</mat-icon>
-    </button>
-    <div *ngIf="file.confirmDelete" class="delete-form">
-      <h4>
-        You are about to delete {{file.type}} 
-        <strong>{{file.name}}</strong>. 
-        This action cannot be undone!
-      </h4>
-      <form [formGroup]="formGroupDelete" (ngSubmit)="delete(file)" #deleteConfirmForm="ngForm">
+    <h1>Drag files to upload</h1>
+  </file-drop>
+  <mat-list class="mat-typography">
+    <mat-list-item>
+      <h3 mat-subheader>File / Folder Actions:</h3>
+      <button mat-button
+      color="warn"
+      *ngIf="!confirmDelete"
+      (click)="confirmDelete = true"
+      [disabled]="!fileInState('selected')">
+        <mat-icon class="items-delete"
+        svgIcon="delete"></mat-icon>
+        Delete Selected
+      </button>
+      <button mat-button
+      color="warn"
+      *ngIf="confirmDelete"
+      (click)="delete()"
+      [disabled]="!fileInState('selected')">
+        <mat-icon class="items-delete"
+        svgIcon="delete-forever"></mat-icon>
+        Confirm Deletion
+      </button>
+      <button mat-button
+      *ngIf="confirmDelete"
+      (click)="confirmDelete = false"
+      [disabled]="!fileInState('selected')">
+        <mat-icon class="items-delete"
+        svgIcon="close"></mat-icon>
+        Cancel
+      </button>
+    </mat-list-item>
+    <mat-list-item>
+      <button mat-button
+      (click)="goBack()"
+      (drop)="moveFileUp($event)"
+      (dragover)="checkFile($event)"
+      [disabled]="!notRoot()"
+      color="accent"
+      class="back-btn">
+        <mat-icon mat-list-icon>arrow_back</mat-icon>
+        Back
+      </button>
+    </mat-list-item>
+    <mat-list-item [class.rename]="newFolder">
+      <button mat-button
+      (click)="newFolder = true"
+      *ngIf="!newFolder"
+      [disabled]="fileInState('rename')"
+      color="primary"
+      class="new-folder">
+        <mat-icon mat-list-icon>add</mat-icon>
+        New Folder
+      </button>
+      <form [formGroup]="formGroup"
+      (ngSubmit)="addFolder()"
+      class="rename-form"
+      *ngIf="newFolder"
+      #newFolderForm="ngForm">
         <mat-form-field>
-          <input matInput placeholder="Type 'delete' to confirm" [(ngModel)]="deleteConfirm" (ngModelChange)="watchdog.detectChanges()" formControlName="deleteConfirm">
-          <mat-error *ngIf="!formGroupDelete.valid">
-            Check spelling and try again
+          <input matInput placeholder="New Folder Name" [(ngModel)]="folderName" formControlName="folderName">
+          <mat-error *ngIf="!formGroup.valid">
+            Folder name is invalid!
           </mat-error>
         </mat-form-field>
-        <button mat-button color="primary" type="button" (click)="cancelDelete(file)">Keep {{file.type}}</button>
+        <button mat-button
+        color="warn"
+        type="button"
+        (click)="newFolder = false; this.watchdog.detectChanges();">
+          Cancel
+        </button>
       </form>
-    </div>
-    <div *ngSwitchCase="'file'" [class]="file.type" [style.opacity]="file.progress / 100">
-      <a mat-button target="_blank" class="item" *ngIf="!file.confirmDelete" href="{{repo + file.path}}">
-        <mat-icon mat-list-icon
+    </mat-list-item>
+    <mat-list-item *ngFor="let file of files"
+    [ngSwitch]="file.type"
+    [class.rename]="file.state === 'rename'">
+      <form [formGroup]="formGroup"
+      (ngSubmit)="rename(file)"
+      *ngIf="file.state === 'rename'"
+      #newFolderForm="ngForm"
+      class="full-width rename-form">
+        <mat-form-field class="half-width">
+          <input matInput
+          class="rename-input"
+          placeholder="New {{file.type}} Name"
+          [(ngModel)]="file.name"
+          formControlName="folderName">
+          <mat-error *ngIf="!formGroup.valid">
+            Invalid {{file.type}} name!
+          </mat-error>
+        </mat-form-field>
+        <button mat-button
+        color="warn"
+        type="button"
+        (click)="file.state = 'none'; file.name = file.oldName; this.watchdog.detectChanges();">
+          Cancel
+        </button>
+      </form>
+      <div *ngSwitchCase="'file'"
+      [class]="file.type">
+        <button mat-button
+        *ngIf="file.state !== 'rename'"
+        draggable="true"
+        (dragstart)="fileDrag($event, file)"
+        (click)="toggle(file)"
+        class="item"
+        [class.mat-primary]="file.state === 'selected'">
+          <mat-icon mat-list-icon
           [svgIcon]="file.icon"
           [style.color]="file.iconColor"
           class="file-type">
-        </mat-icon>
-        {{file.name}}
-      </a>
-    </div>
-    <div color="primary" *ngSwitchCase="'folder'" [class]="file.type">
-      <a mat-button [routerLink]="file.path" class="item" *ngIf="!file.confirmDelete">
-        <mat-icon mat-list-icon class="item-type" color="primary">folder</mat-icon>
-        {{file.name}}
-      </a>
-    </div>
-  </mat-list-item>
-</mat-list>
+          </mat-icon>
+          {{file.name}}
+        </button>
+        <a mat-icon-button
+        target="_blank"
+        class="item download-file"
+        href="{{repo + file.path}}">
+          <mat-icon class="items-delete"
+          svgIcon="download"></mat-icon>
+        </a>
+      </div>
+      <div *ngSwitchCase="'folder'"
+      color="primary"
+      [class]="file.type">
+        <button mat-button
+        *ngIf="file.state !== 'rename'"
+        (click)="toggle(file)"
+        (drop)="moveFile($event, file)"
+        (dragover)="checkFile($event)"
+        class="item"
+        [class.mat-primary]="file.state === 'selected'">
+          <mat-icon mat-list-icon class="item-type" color="primary">folder</mat-icon>
+          {{file.name}}
+        </button>
+        <a mat-icon-button
+        [routerLink]="file.path"
+        *ngIf="file.state !== 'rename'"
+        class="goto-folder">
+          <mat-icon mat-list-icon
+          class="item-type"
+          svgIcon="arrow-right"
+          color="primary"></mat-icon>
+        </a>
+      </div>
+    </mat-list-item>
+    <mat-list-item *ngFor="let file of uploadingFiles">
+      <div class="file"
+      [style.opacity]="file.progress < 100 ? 0.5 : 1">
+        <button mat-button class="item">
+          <mat-icon mat-list-icon
+          [svgIcon]="file.icon"
+          [style.color]="file.iconColor"
+          class="file-type">
+          </mat-icon>
+          {{file.name}}
+        </button>
+        <mat-progress-bar mode="determinate" [value]="file.progress"></mat-progress-bar>
+      </div>
+    </mat-list-item>
+    <mat-list-item *ngFor="let folder of uploadingFolders">
+      <div class="folder"
+      [style.opacity]="folder.progress < 100 ? 0.5 : 1">
+        <button mat-button class="item">
+          <mat-icon mat-list-icon class="item-type" color="primary">folder</mat-icon>
+          {{folder.name}}
+        </button>
+        <mat-progress-bar mode="determinate" [value]="folder.progress * (100 / folder.fileCount)"></mat-progress-bar>
+      </div>
+    </mat-list-item>
+  </mat-list>
+</div>

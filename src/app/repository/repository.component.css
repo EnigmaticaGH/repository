@@ -1,14 +1,42 @@
-mat-list-item{
+mat-list-item:not(.rename){
   height: 2.5rem;
+}
+
+mat-list-item.rename{
+  height: 4rem;
+}
+
+mat-list-item *{
+  position: relative;
+  z-index: 2;
+}
+
+.rename-form{
+  padding: 24px 0 0 8px;
 }
 
 .mat-button.item{
   padding-left: 0;
+  padding-right: 8px;
   line-height: 24px;
   text-align: left;
+  min-width: 0;
+}
+
+.mat-icon-button.goto-folder,
+.mat-icon-button.download-file{
+  margin-left: -12px;
 }
 
 .delete-form{
   background-color: white;
   padding-bottom: 8px;
+}
+
+.full-width{
+  width: 100%;
+}
+
+.half-width{
+  width: 50%;
 }
