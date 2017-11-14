@@ -48,28 +48,35 @@ export class RepositoryService {
     this.progress[relativePath + file.name] = new BehaviorSubject<number>(0);
     this.progressChange[relativePath + file.name] = this.progress[relativePath + file.name].asObservable();
     return Observable.create(observer => {
-      let formData: FormData = new FormData()
-      let xhr: XMLHttpRequest = new XMLHttpRequest();
-      formData.append('file', file, file.name);
-      formData.append('path', path);
-      formData.append('relativePath', relativePath);
-      xhr.onreadystatechange = () => {
-        if (xhr.readyState === 4) {
-          if (xhr.status === 200) {
-            observer.next(JSON.parse(xhr.response));
-            this.progress[relativePath + file.name].complete();
-            observer.complete();
-          } else {
-            observer.error(xhr.response);
+      if (file.size > 125000000) { // 125MB
+        this.progress[relativePath + file.name].next(100);
+        this.progress[relativePath + file.name].complete();
+        observer.next({error: 'Exceeds 125 MB filesize limit.'});
+        observer.complete();
+      } else {
+        let formData: FormData = new FormData()
+        let xhr: XMLHttpRequest = new XMLHttpRequest();
+        formData.append('file', file, file.name);
+        formData.append('path', path);
+        formData.append('relativePath', relativePath);
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+              observer.next(JSON.parse(xhr.response));
+              this.progress[relativePath + file.name].complete();
+              observer.complete();
+            } else {
+              observer.error(xhr.response);
+            }
           }
-        }
-      };
-      xhr.upload.onprogress = (event) => {
-        this.progress[relativePath + file.name].next(Math.round(event.loaded / event.total * 100));
-      };
-
-      xhr.open('POST', this.url, true);
-      xhr.send(formData);
+        };
+        xhr.upload.onprogress = (event) => {
+          this.progress[relativePath + file.name].next(Math.round(event.loaded / event.total * 100));
+        };
+  
+        xhr.open('POST', this.url, true);
+        xhr.send(formData);
+      }
     });
   }
 
