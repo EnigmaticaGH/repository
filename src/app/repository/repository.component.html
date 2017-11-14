@@ -100,14 +100,20 @@
           Cancel
         </button>
       </form>
+      <mat-icon mat-list-icon
+      (click)="toggle(file)"
+      class="select-icon"
+      [svgIcon]="getFromFileState(file.state)">
+      </mat-icon>
       <div *ngSwitchCase="'file'"
       [class]="file.type">
-        <button mat-button
+        <a mat-button
         *ngIf="file.state !== 'rename'"
         draggable="true"
         (dragstart)="fileDrag($event, file)"
-        (click)="toggle(file)"
         class="item"
+        href="{{repo + file.path}}"
+        target="_blank"
         [class.mat-primary]="file.state === 'selected'">
           <mat-icon mat-list-icon
           [svgIcon]="file.icon"
@@ -115,43 +121,32 @@
           class="file-type">
           </mat-icon>
           {{file.name}}
-        </button>
-        <a mat-icon-button
-        target="_blank"
-        class="item download-file"
-        href="{{repo + file.path}}">
-          <mat-icon class="items-delete"
-          svgIcon="download"></mat-icon>
         </a>
       </div>
       <div *ngSwitchCase="'folder'"
       color="primary"
       [class]="file.type">
-        <button mat-button
+        <a mat-button
         *ngIf="file.state !== 'rename'"
-        (click)="toggle(file)"
         (drop)="moveFile($event, file)"
         (dragover)="checkFile($event)"
+        [routerLink]="file.path"
         class="item"
         [class.mat-primary]="file.state === 'selected'">
           <mat-icon mat-list-icon class="item-type" color="primary">folder</mat-icon>
           {{file.name}}
-        </button>
-        <a mat-icon-button
-        [routerLink]="file.path"
-        *ngIf="file.state !== 'rename'"
-        class="goto-folder">
-          <mat-icon mat-list-icon
-          class="item-type"
-          svgIcon="arrow-right"
-          color="primary"></mat-icon>
         </a>
       </div>
     </mat-list-item>
-    <mat-list-item *ngFor="let file of uploadingFiles">
+    <mat-list-item *ngFor="let file of uploadingFiles"
+    [class.mat-warn]="file.error"
+    class="uploading">
       <div class="file"
-      [style.opacity]="file.progress < 100 ? 0.5 : 1">
-        <button mat-button class="item">
+      [style.opacity]="file.progress < 100 && !file.error ? 0.5 : 1"
+      [class.mat-warn]="file.error">
+        <button mat-button
+        class="item"
+        [class.mat-warn]="file.error">
           <mat-icon mat-list-icon
           [svgIcon]="file.icon"
           [style.color]="file.iconColor"
@@ -159,17 +154,31 @@
           </mat-icon>
           {{file.name}}
         </button>
-        <mat-progress-bar mode="determinate" [value]="file.progress"></mat-progress-bar>
+        <mat-progress-bar mode="determinate"
+          [value]="file.progress"
+          [class.mat-warn]="file.error">
+        </mat-progress-bar>
+        <span *ngIf="!file.error">
+          {{(file.size * (file.progress / 100)) | filesize}} / {{file.size | filesize}}
+        </span>
+        <span *ngIf="file.error"
+        [class.mat-warn]="file.error">
+          {{file.error}}
+        </span>
       </div>
     </mat-list-item>
-    <mat-list-item *ngFor="let folder of uploadingFolders">
+    <mat-list-item *ngFor="let folder of uploadingFolders" class="uploading">
       <div class="folder"
-      [style.opacity]="folder.progress < 100 ? 0.5 : 1">
+      [style.opacity]="folder.progress < folder.size ? 0.5 : 1">
         <button mat-button class="item">
           <mat-icon mat-list-icon class="item-type" color="primary">folder</mat-icon>
           {{folder.name}}
         </button>
-        <mat-progress-bar mode="determinate" [value]="folder.progress * (100 / folder.fileCount)"></mat-progress-bar>
+        <mat-progress-bar mode="determinate" [value]="(folder.progress / folder.size) * 100"></mat-progress-bar>
+        <div>{{folder.progress | filesize}} / {{folder.size | filesize}}</div>
+        <div style="color: #F44336;" *ngIf="folder.errors > 0">
+          Error uploading {{folder.errors}} file(s)
+        </div>
       </div>
     </mat-list-item>
   </mat-list>

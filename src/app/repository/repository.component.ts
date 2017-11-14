@@ -40,6 +40,7 @@ export class RepositoryComponent implements OnInit {
     this.newFolder = false;
     this.folderName = "";
 
+    this.uploadingFiles = [];
     this.uploadingFolders = [];
 
     this.route.url.subscribe(url => this.getDirectoryContent(url));
@@ -53,7 +54,14 @@ export class RepositoryComponent implements OnInit {
   }
 
   getDirectoryContent(url: UrlSegment[]): void {
-    this.uploadingFiles = [];
+    // Prune uploaded folders from in-progress list
+    this.uploadingFiles = this.uploadingFiles.filter((el) => {
+      return el['progress'] < 100 || el['error'];
+    });
+    // Prune uploaded folders from in-progress list
+    this.uploadingFolders = this.uploadingFolders.filter((el) => {
+      return el['progress'] < el['size'];
+    });
     this.newFolder = false;
     this.folderName = "";
     let path = "";
@@ -209,58 +217,85 @@ export class RepositoryComponent implements OnInit {
         let icon = this.getIcon(extension);
         let color = this.iconColor(icon);
         let type = relativePath == "" ? 'file' : 'folder';
-        let uploadFile = {
-          'name': name,
-          'path': relativePath,
-          'extension': extension,
-          'icon': icon,
-          'iconColor': color,
-          'progress': 0
-        };
-        // uploadFolders are for display only, to show
-        // upload progress of folders
-        // Only top-level folders are included
-        let relPathFirstLvl = relativePath.split('/')[0];
-        let uploadFolder: Object = {
-          'name': relPathFirstLvl,
-          'fileCount': 0,
-          'progress': 0
-        };
-        let folderExists = this.uploadingFolders.find((el) => {
-          return el['name'] === relPathFirstLvl;
-        });
-        if (folderExists) {
-          uploadFolder = folderExists;
-        } else {
-          this.uploadingFolders.push(uploadFolder);
-        }
-        info['folder'] = relPathFirstLvl;
-        if (relPathFirstLvl === uploadFolder['name']) {
-          uploadFolder['fileCount']++;
+        if (type === 'folder') {
+          // uploadFolders are for display only, to show
+          // upload progress of folders
+          // Only top-level folders are included
+          let relPathFirstLvl = relativePath.split('/')[0];
+          let folderExists = this.uploadingFolders.find((el) => {
+            return el['name'] === relPathFirstLvl;
+          });
+          if (folderExists && relPathFirstLvl === folderExists['name']
+          && info.size <= 125000000) { // 125 MB size limit
+            folderExists['fileCount']++;
+            folderExists['size'] += info['size'];
+          } else {
+            this.uploadingFolders.push({
+              'name': relPathFirstLvl,
+              'fileCount': 0,
+              'progress': 0,
+              'size': 0,
+              'errors': 0
+            });
+          }
+          info['folder'] = relPathFirstLvl;
         }
         if (type === 'file') {
-          this.uploadingFiles.push(uploadFile);
+          this.uploadingFiles.push({
+            'name': name,
+            'id': info.name,
+            'path': relativePath,
+            'extension': extension,
+            'icon': icon,
+            'iconColor': color,
+            'progress': 0,
+            'size': info['size']
+          });
         }
-        this.repositoryService.upload(info, path, uploadFile.path)
+        this.repositoryService.upload(info, path, relativePath)
         .subscribe(response => {
+          if (response['error']) {
+            let file = this.uploadingFiles.find((el) => {
+              return el['id'] == info.name;
+            });
+            if (file) {
+              file['error'] = response['error'];
+              // Remove errored file after 5 seconds
+              setTimeout(() => {
+                this.uploadingFiles = this.uploadingFiles.filter((el) => {
+                  return el['name'] !== file['name'];
+                });
+                this.watchdog.detectChanges();
+              }, 5000);
+            }
+            let folder = this.uploadingFolders.find((el) => {
+              return el['name'] == info.folder;
+            });
+            if (folder) {
+              folder['errors']++;
+            }
+          }
           this.getDirectoryContent(this.route.url['value']);
         });
-        this.repositoryService.progressChange[uploadFile.path + info.name].subscribe(res => {
+        var oldProgress = 0;
+        this.repositoryService.progressChange[relativePath + info.name].subscribe(res => {
           if (type === 'file') {
-            uploadFile.progress = res;
-          } else {
-            if (res === 100) {
-              let folder = this.uploadingFolders.find((el) => {
-                return el['name'] == info.folder;
-              });
-              if (folder) {
-                folder['progress']++;
-              }
-              // Prune uploaded folders from in-progress list
-              this.uploadingFolders = this.uploadingFolders.filter((el) => {
-                return el['progress'] < el['fileCount'];
-              });
+            let file = this.uploadingFiles.find((el) => {
+              return el['id'] == info.name;
+            });
+            if (file) {
+              file['progress'] = res;
             }
+          } else {
+            var newProgress = res;
+            var progressDiff = newProgress - oldProgress;
+            let folder = this.uploadingFolders.find((el) => {
+              return el['name'] == info.folder;
+            });
+            if (folder) {
+              folder['progress'] += info.size * (progressDiff / 100);
+            }
+            oldProgress = res;
           }
           this.watchdog.detectChanges();
         });
@@ -280,13 +315,17 @@ export class RepositoryComponent implements OnInit {
   getIcon(extension): string {
     if (extension.match(/xls/)) {
       return 'file-excel';
-    } else if (extension.match(/doc/)) {
+    } else if (extension.match(/doc/i)) {
       return 'file-word';
-    } else if (extension.match(/ppt/)) {
+    } else if (extension.match(/ppt/i)) {
       return 'file-powerpoint';
-    } else if (extension.match(/pdf/)) {
+    } else if (extension.match(/pdf/i)) {
       return 'file-pdf';
-    } else if (extension.match(/txt/)) {
+    } else if (extension.match(/vsd/i)) {
+      return 'file-chart';
+    } else if (extension.match(/jpe?g|png|gif|bmp|tif|webp/i)) {
+      return 'file-image';
+    } else if (extension.match(/txt/i)) {
       return 'file-document';
     } else {
       return 'file';
@@ -299,9 +338,20 @@ export class RepositoryComponent implements OnInit {
       'file-word': '#303F9F',
       'file-powerpoint': '#F57C00',
       'file-pdf': '#D32F2F',
+      'file-chart': '#512DA8',
+      'file-image': '#0097A7',
       'file-document': '#455A64',
       'file': '#616161'
     }
     return iconColors[icon];
+  }
+
+  getFromFileState(state): string {
+    let icons = {
+      'none': 'checkbox-blank-outline',
+      'selected': 'checkbox-marked',
+      'rename': 'rename-box'
+    };
+    return icons[state];
   }
 }

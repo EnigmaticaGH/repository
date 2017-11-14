@@ -1,4 +1,4 @@
-mat-list-item:not(.rename){
+mat-list-item{
   height: 2.5rem;
 }
 
@@ -6,13 +6,28 @@ mat-list-item.rename{
   height: 4rem;
 }
 
+mat-list-item.uploading{
+  height: 4rem;
+  padding-top: 1rem;
+}
+
 mat-list-item *{
   position: relative;
   z-index: 2;
 }
 
+.select-icon{
+  color: #aaa;
+  cursor: pointer;
+}
+
+.select-icon:hover{
+  color: #888;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
 .rename-form{
-  padding: 24px 0 0 8px;
+  margin: 24px 0 0 8px;
 }
 
 .mat-button.item{
