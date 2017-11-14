@@ -100,11 +100,15 @@
           Cancel
         </button>
       </form>
-      <mat-icon mat-list-icon
+      <button mat-icon-button
       (click)="toggle(file)"
       class="select-icon"
-      [svgIcon]="getFromFileState(file.state)">
-      </mat-icon>
+      *ngIf="file.state !== 'rename'"
+      [disabled]="fileInState('rename') && file.state !== 'rename'">
+        <mat-icon mat-list-icon
+        [svgIcon]="getFromFileState(file.state)">
+        </mat-icon>
+      </button>
       <div *ngSwitchCase="'file'"
       [class]="file.type">
         <a mat-button

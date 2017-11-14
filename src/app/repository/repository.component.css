@@ -18,12 +18,6 @@ mat-list-item *{
 
 .select-icon{
   color: #aaa;
-  cursor: pointer;
-}
-
-.select-icon:hover{
-  color: #888;
-  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .rename-form{
