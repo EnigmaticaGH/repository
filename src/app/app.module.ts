@@ -35,13 +35,15 @@ import { AuthService } from './auth.service';
 import { LoginModalComponent } from './login-modal/login-modal.component';
 import { RepositoryComponent } from './repository/repository.component';
 import { LogoutButtonComponent } from './logout-button/logout-button.component';
+import { FilesizePipe } from './filesize.pipe';
 
 @NgModule({
   declarations: [
     AppComponent,
     LoginModalComponent,
     RepositoryComponent,
-    LogoutButtonComponent
+    LogoutButtonComponent,
+    FilesizePipe
   ],
   imports: [
     BrowserModule,
