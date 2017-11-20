@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormGroup, FormControl, ValidatorFn, AbstractControl } from '@angular/forms';
 import { Location } from '@angular/common';
 import { Router, ActivatedRoute, UrlSegment } from '@angular/router'; 
-import { FileDropModule, UploadFile, UploadEvent } from 'ngx-file-drop/lib/ngx-drop';
+import { FileDropModule, UploadFile, UploadEvent } from 'ngx-file-drop';
 import { RepositoryService } from './repository.service';
 import { ServiceLocation } from '../service-location';
 
@@ -224,7 +224,7 @@ export class RepositoryComponent implements OnInit {
           this.uploadFile(info, path, relativePath);
         });
       } else {
-        console.log(relativePath);
+        //console.log(relativePath);
       }
     }
   }
