@@ -109,7 +109,7 @@ export class RepositoryComponent implements OnInit {
       this.repositoryService.add(this.folderName, path)
       .subscribe(response => {
         this.getDirectoryContent(this.route.url['value']);
-      })
+      });
       this.newFolder = false;
       this.folderName = "";
     } 
@@ -128,8 +128,12 @@ export class RepositoryComponent implements OnInit {
     $event.preventDefault();
     let movedFile = JSON.parse($event.dataTransfer.getData("text"));
     // Strip filename from current path and preserve the file path
-    let oldPath = movedFile['path'].replace(movedFile['name'] + '.' + movedFile['extension'], '');
-    let newPath = oldPath + folder['name'] + '/' + movedFile['name'] + '.' + movedFile['extension'];
+    let filename = movedFile['name'] + '.' + movedFile['extension'];
+    if (movedFile['type'] === 'folder') {
+      filename = movedFile['name'];
+    }
+    let oldPath = movedFile['path'].replace(filename, '');
+    let newPath = oldPath + folder['name'] + '/' + filename;
     this.move(movedFile['path'], newPath);
   }
 
@@ -137,10 +141,14 @@ export class RepositoryComponent implements OnInit {
     $event.preventDefault();
     let movedFile = JSON.parse($event.dataTransfer.getData("text"));
     // Strip filename from current path and preserve the file path
-    let oldPath = movedFile['path'].replace('/' + movedFile['name'] + '.' + movedFile['extension'], '');
+    let filename = movedFile['name'] + '.' + movedFile['extension'];
+    if (movedFile['type'] === 'folder') {
+      filename = movedFile['name'];
+    }
+    let oldPath = movedFile['path'].replace('/' + filename, '');
     let pathParts = oldPath.split('/');
     pathParts.splice(-1,1); // Remove the deepest path part to move the path up once in the dir tree
-    let newPath = pathParts.join('/') + '/' + movedFile['name'] + '.' + movedFile['extension'];
+    let newPath = pathParts.join('/') + '/' + filename;
     this.move(movedFile['path'], newPath);
   }
 
@@ -206,101 +214,110 @@ export class RepositoryComponent implements OnInit {
 
   dropped(event: UploadEvent) {
     let path = this.getUrl();
+    console.log(event);
     for (var file of event.files) {
       let pathParts = file.relativePath.split('/');
       pathParts.splice(-1, 1);
       let relativePath = pathParts.join('/');
-      file.fileEntry.file(info => {
-        let dotIdx = info.name.lastIndexOf('.');
-        let name = info.name.substring(0, dotIdx);
-        let extension = info.name.substring(dotIdx + 1);
-        let icon = this.getIcon(extension);
-        let color = this.iconColor(icon);
-        let type = relativePath == "" ? 'file' : 'folder';
-        if (type === 'folder') {
-          // uploadFolders are for display only, to show
-          // upload progress of folders
-          // Only top-level folders are included
-          let relPathFirstLvl = relativePath.split('/')[0];
-          let folderExists = this.uploadingFolders.find((el) => {
-            return el['name'] === relPathFirstLvl;
-          });
-          if (folderExists && relPathFirstLvl === folderExists['name']
-          && info.size <= 125000000) { // 125 MB size limit
-            folderExists['fileCount']++;
-            folderExists['size'] += info['size'];
-          } else {
-            this.uploadingFolders.push({
-              'name': relPathFirstLvl,
-              'fileCount': 0,
-              'progress': 0,
-              'size': 0,
-              'errors': 0
-            });
-          }
-          info['folder'] = relPathFirstLvl;
-        }
-        if (type === 'file') {
-          this.uploadingFiles.push({
-            'name': name,
-            'id': info.name,
-            'path': relativePath,
-            'extension': extension,
-            'icon': icon,
-            'iconColor': color,
-            'progress': 0,
-            'size': info['size']
-          });
-        }
-        this.repositoryService.upload(info, path, relativePath)
-        .subscribe(response => {
-          if (response['error']) {
-            let file = this.uploadingFiles.find((el) => {
-              return el['id'] == info.name;
-            });
-            if (file) {
-              file['error'] = response['error'];
-              // Remove errored file after 5 seconds
-              setTimeout(() => {
-                this.uploadingFiles = this.uploadingFiles.filter((el) => {
-                  return el['name'] !== file['name'];
-                });
-                this.watchdog.detectChanges();
-              }, 5000);
-            }
-            let folder = this.uploadingFolders.find((el) => {
-              return el['name'] == info.folder;
-            });
-            if (folder) {
-              folder['errors']++;
-            }
-          }
-          this.getDirectoryContent(this.route.url['value']);
+      if (file.fileEntry.file) {
+        file.fileEntry.file(info => {
+          this.uploadFile(info, path, relativePath);
         });
-        var oldProgress = 0;
-        this.repositoryService.progressChange[relativePath + info.name].subscribe(res => {
-          if (type === 'file') {
-            let file = this.uploadingFiles.find((el) => {
-              return el['id'] == info.name;
-            });
-            if (file) {
-              file['progress'] = res;
-            }
-          } else {
-            var newProgress = res;
-            var progressDiff = newProgress - oldProgress;
-            let folder = this.uploadingFolders.find((el) => {
-              return el['name'] == info.folder;
-            });
-            if (folder) {
-              folder['progress'] += info.size * (progressDiff / 100);
-            }
-            oldProgress = res;
-          }
-          this.watchdog.detectChanges();
+      } else {
+        console.log(relativePath);
+      }
+    }
+  }
+
+  private uploadFile(info, path, relativePath): void {
+    let dotIdx = info.name.lastIndexOf('.');
+    let name = info.name.substring(0, dotIdx);
+    let extension = info.name.substring(dotIdx + 1);
+    let icon = this.getIcon(extension);
+    let color = this.iconColor(icon);
+    let type = relativePath == "" ? 'file' : 'folder';
+    if (type === 'folder') {
+      // uploadFolders are for display only, to show
+      // upload progress of folders
+      // Only top-level folders are included
+      let relPathFirstLvl = relativePath.split('/')[0];
+      let folderExists = this.uploadingFolders.find((el) => {
+        return el['name'] === relPathFirstLvl;
+      });
+      if (folderExists && relPathFirstLvl === folderExists['name']
+      && info.size <= 125000000) { // 125 MB size limit
+        folderExists['fileCount']++;
+        folderExists['size'] += info['size'];
+      } else {
+        this.uploadingFolders.push({
+          'name': relPathFirstLvl,
+          'fileCount': 0,
+          'progress': 0,
+          'size': 0,
+          'errors': 0
         });
+      }
+      info['folder'] = relPathFirstLvl;
+    }
+    if (type === 'file') {
+      this.uploadingFiles.push({
+        'name': name,
+        'id': info.name,
+        'path': relativePath,
+        'extension': extension,
+        'icon': icon,
+        'iconColor': color,
+        'progress': 0,
+        'size': info['size']
       });
     }
+    this.repositoryService.upload(info, path, relativePath)
+    .subscribe(response => {
+      if (response['error']) {
+        let file = this.uploadingFiles.find((el) => {
+          return el['id'] == info.name;
+        });
+        if (file) {
+          file['error'] = response['error'];
+          // Remove errored file after 5 seconds
+          setTimeout(() => {
+            this.uploadingFiles = this.uploadingFiles.filter((el) => {
+              return el['name'] !== file['name'];
+            });
+            this.watchdog.detectChanges();
+          }, 5000);
+        }
+        let folder = this.uploadingFolders.find((el) => {
+          return el['name'] == info.folder;
+        });
+        if (folder) {
+          folder['errors']++;
+        }
+      }
+      this.getDirectoryContent(this.route.url['value']);
+    });
+    var oldProgress = 0;
+    this.repositoryService.progressChange[relativePath + info.name].subscribe(res => {
+      if (type === 'file') {
+        let file = this.uploadingFiles.find((el) => {
+          return el['id'] == info.name;
+        });
+        if (file) {
+          file['progress'] = res;
+        }
+      } else {
+        var newProgress = res;
+        var progressDiff = newProgress - oldProgress;
+        let folder = this.uploadingFolders.find((el) => {
+          return el['name'] == info.folder;
+        });
+        if (folder) {
+          folder['progress'] += info.size * (progressDiff / 100);
+        }
+        oldProgress = res;
+      }
+      this.watchdog.detectChanges();
+    });
   }
 
   private getUrl(): string {

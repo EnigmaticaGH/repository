@@ -132,6 +132,8 @@
       [class]="file.type">
         <a mat-button
         *ngIf="file.state !== 'rename'"
+        draggable="true"
+        (dragstart)="fileDrag($event, file)"
         (drop)="moveFile($event, file)"
         (dragover)="checkFile($event)"
         [routerLink]="file.path"
