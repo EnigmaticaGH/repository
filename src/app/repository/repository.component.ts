@@ -139,17 +139,21 @@ export class RepositoryComponent implements OnInit {
 
   moveFileUp($event): void {
     $event.preventDefault();
-    let movedFile = JSON.parse($event.dataTransfer.getData("text"));
-    // Strip filename from current path and preserve the file path
-    let filename = movedFile['name'] + '.' + movedFile['extension'];
-    if (movedFile['type'] === 'folder') {
-      filename = movedFile['name'];
+    if (this.notRoot()) {
+      let movedFile = JSON.parse($event.dataTransfer.getData("text"));
+      // Strip filename from current path and preserve the file path
+      let filename = movedFile['name'] + '.' + movedFile['extension'];
+      if (movedFile['type'] === 'folder') {
+        filename = movedFile['name'];
+      }
+      let oldPath = movedFile['path'].replace('/' + filename, '');
+      let pathParts = oldPath.split('/');
+      pathParts.splice(-1,1); // Remove the deepest path part to move the path up once in the dir tree
+      let newPath = pathParts.join('/') + '/' + filename;
+      this.move(movedFile['path'], newPath);
+    } else {
+      
     }
-    let oldPath = movedFile['path'].replace('/' + filename, '');
-    let pathParts = oldPath.split('/');
-    pathParts.splice(-1,1); // Remove the deepest path part to move the path up once in the dir tree
-    let newPath = pathParts.join('/') + '/' + filename;
-    this.move(movedFile['path'], newPath);
   }
 
   private move(oldPath: string, newPath: string): void {
