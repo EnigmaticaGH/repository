@@ -49,3 +49,11 @@ mat-list-item *{
 .half-width{
   width: 50%;
 }
+
+.file-upload-input{
+  display: none;
+}
+
+.file-upload-button{
+
+}

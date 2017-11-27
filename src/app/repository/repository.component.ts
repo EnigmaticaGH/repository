@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { FormGroup, FormControl, ValidatorFn, AbstractControl } from '@angular/forms';
 import { Location } from '@angular/common';
 import { Router, ActivatedRoute, UrlSegment } from '@angular/router'; 
@@ -13,6 +13,8 @@ import { ServiceLocation } from '../service-location';
   providers: [RepositoryService]
 })
 export class RepositoryComponent implements OnInit {
+  @ViewChild('fileInput') fileInput: ElementRef;
+
   files: Array<Object>;
   uploadingFiles: Array<Object>;
   uploadingFolders: Array<Object>;
@@ -113,6 +115,18 @@ export class RepositoryComponent implements OnInit {
       this.newFolder = false;
       this.folderName = "";
     } 
+  }
+
+  uploadClick($event): void {
+    let new_event = new MouseEvent($event.type, $event);
+    this.fileInput.nativeElement.dispatchEvent(new_event);
+  }
+
+  uploadFiles($event): void {
+    let path = this.getUrl();
+    for(let file of $event.srcElement.files) {
+      this.uploadFile(file, path, "");
+    }
   }
 
   fileDrag($event, file): void {
@@ -217,9 +231,9 @@ export class RepositoryComponent implements OnInit {
   }
 
   dropped(event: UploadEvent) {
-    let path = this.getUrl();
     console.log(event);
     for (var file of event.files) {
+      let path = this.getUrl();
       let pathParts = file.relativePath.split('/');
       pathParts.splice(-1, 1);
       let relativePath = pathParts.join('/');

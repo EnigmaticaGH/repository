@@ -33,6 +33,20 @@
         svgIcon="close"></mat-icon>
         Cancel
       </button>
+      <div class="upload-button-wrapper">
+        <input #fileInput
+        type="file"
+        class="file-upload-input"
+        (change)="uploadFiles($event)"
+        multiple>
+        <button mat-button
+        color="primary"
+        (click)="uploadClick($event)"
+        class="file-upload-button">
+          <mat-icon mat-list-icon svgIcon="arrow-up"></mat-icon>
+          Upload Files
+        </button>
+      </div>
     </mat-list-item>
     <mat-list-item>
       <button mat-button
@@ -42,7 +56,7 @@
       [disabled]="!notRoot()"
       color="accent"
       class="back-btn">
-        <mat-icon mat-list-icon>arrow_back</mat-icon>
+        <mat-icon mat-list-icon svgIcon="arrow-left"></mat-icon>
         Back
       </button>
     </mat-list-item>
@@ -53,7 +67,7 @@
       [disabled]="fileInState('rename')"
       color="primary"
       class="new-folder">
-        <mat-icon mat-list-icon>add</mat-icon>
+        <mat-icon mat-list-icon svgIcon="plus"></mat-icon>
         New Folder
       </button>
       <form [formGroup]="formGroup"
@@ -139,7 +153,7 @@
         [routerLink]="file.path"
         class="item"
         [class.mat-primary]="file.state === 'selected'">
-          <mat-icon mat-list-icon class="item-type" color="primary">folder</mat-icon>
+          <mat-icon mat-list-icon class="item-type" color="primary" svgIcon="folder"></mat-icon>
           {{file.name}}
         </a>
       </div>
@@ -177,7 +191,7 @@
       <div class="folder"
       [style.opacity]="folder.progress < folder.size ? 0.5 : 1">
         <button mat-button class="item">
-          <mat-icon mat-list-icon class="item-type" color="primary">folder</mat-icon>
+          <mat-icon mat-list-icon class="item-type" color="primary" svgIcon="folder"></mat-icon>
           {{folder.name}}
         </button>
         <mat-progress-bar mode="determinate" [value]="(folder.progress / folder.size) * 100"></mat-progress-bar>

@@ -26,7 +26,8 @@ a.mat-menu-item > mat-icon {
 }
 
 .file-drop-custom h1{
-  color: rgba(0, 0, 0, 0.1);
+  /*color: rgba(0, 0, 0, 0.1);*/
+  color: rgba(0, 0, 0, 0.01);
   font-size: 72px;
   cursor: default;
 }
