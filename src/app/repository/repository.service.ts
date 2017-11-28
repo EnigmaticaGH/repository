@@ -82,7 +82,7 @@ export class RepositoryService {
 
   delete(path: string): Observable<boolean> {
     return this.http
-    .delete(this.url + "?path=" + path, {headers: this.headers})
+    .delete(this.url + "?path=" + encodeURIComponent(path), {headers: this.headers})
     .map(res => res.json());
   }
 }

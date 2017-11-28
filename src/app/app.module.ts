@@ -36,6 +36,7 @@ import { LoginModalComponent } from './login-modal/login-modal.component';
 import { RepositoryComponent } from './repository/repository.component';
 import { LogoutButtonComponent } from './logout-button/logout-button.component';
 import { FilesizePipe } from './filesize.pipe';
+import { UriEncodePipe } from './uri-encode.pipe';
 
 @NgModule({
   declarations: [
@@ -43,7 +44,8 @@ import { FilesizePipe } from './filesize.pipe';
     LoginModalComponent,
     RepositoryComponent,
     LogoutButtonComponent,
-    FilesizePipe
+    FilesizePipe,
+    UriEncodePipe
   ],
   imports: [
     BrowserModule,

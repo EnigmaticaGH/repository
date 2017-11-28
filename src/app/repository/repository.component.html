@@ -130,7 +130,7 @@
         draggable="true"
         (dragstart)="fileDrag($event, file)"
         class="item"
-        href="{{repo + file.path}}"
+        href="{{repo + file.path | uriEncode}}"
         target="_blank"
         [class.mat-primary]="file.state === 'selected'">
           <mat-icon mat-list-icon

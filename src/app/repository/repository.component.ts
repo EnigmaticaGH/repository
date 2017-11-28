@@ -35,6 +35,7 @@ export class RepositoryComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    console.log(this.repo);
     this.files = [];
     this.formGroup = new FormGroup({
       'folderName': new FormControl('', this.validateFolderName())
